@@ -37,17 +37,13 @@ export default async function handler(req, res) {
         if (messages && messages.length > 0) {
           const msg = messages[0];
 
-          // número del cliente (ej: 5698584xxxx)
-          const from = msg.from;
-          // texto que escribió (si es que hay)
-          const text = msg.text?.body || '';
+          const from = msg.from; // número del cliente
+          const text = (msg.text?.body || '').trim();
+          const lower = text.toLowerCase();
 
           console.log('👤 De:', from);
           console.log('💬 Texto:', text);
 
-          // --- RESPUESTA SIMPLE DE BIENVENIDA ---
-
-          // Si no tenemos token configurado, no intentamos responder
           if (!WHATSAPP_TOKEN || !WHATSAPP_PHONE_NUMBER_ID) {
             console.error(
               '⚠️ Falta WHATSAPP_TOKEN o WHATSAPP_PHONE_NUMBER_ID en las env vars'
@@ -56,8 +52,50 @@ export default async function handler(req, res) {
             const nombreContacto =
               value?.contacts?.[0]?.profile?.name || 'amig@';
 
-            // Mensaje básico de bienvenida (después lo cambiamos a plantilla)
-            const replyText = `Hola ${nombreContacto} 👋\n\nSoy *Edu*, el asistente virtual de *Delicias Porteñas* 🧁\n\nPuedo ayudarte con:\n1️⃣ Ver la carta de productos\n2️⃣ Consultar precios y porciones\n3️⃣ Hacer o consultar un pedido existente\n\nEscribe el número de la opción que prefieras.`;
+            let replyText = '';
+
+            // --- ROUTER SIMPLE ---
+
+            if (lower === '1' || lower.includes('carta')) {
+              // Ver carta de productos
+              replyText =
+                `Perfecto ${nombreContacto} 😄\n\n` +
+                `Aquí tienes el *menú general de productos* de Delicias Porteñas:\n\n` +
+                `• Tortas artesanales (hojarasca, bizcocho, panqueque)\n` +
+                `• Kuchenes de frutas y crema\n` +
+                `• Panadería fresca del día 🥐\n\n` +
+                `Escribe:\n` +
+                `👉 *Tortas* para ver opciones de tortas\n` +
+                `👉 *Kuchenes* para ver opciones de kuchenes\n` +
+                `👉 *Panadería* para ver los panes disponibles`;
+            } else if (lower === '2' || lower.includes('precio')) {
+              // Consultar precios y porciones
+              replyText =
+                `Claro ${nombreContacto} 😊\n\n` +
+                `Para ayudarte con *precios y porciones*, dime primero qué te interesa:\n\n` +
+                `• Escribe *Torta* + el tipo (ej: "Torta hojarasca manjar")\n` +
+                `• Escribe *Kuchen* + sabor (ej: "Kuchen frambuesa")\n\n` +
+                `Yo te respondo con porciones recomendadas y valores aproximados.`;
+            } else if (lower === '3' || lower.includes('pedido')) {
+              // Hacer o consultar pedido
+              replyText =
+                `Genial ${nombreContacto} 🧁\n\n` +
+                `Para *hacer o consultar un pedido*, por favor envíame:\n\n` +
+                `1️⃣ Tipo de producto (torta, kuchen, pan, etc.)\n` +
+                `2️⃣ Fecha aproximada de entrega\n` +
+                `3️⃣ Para cuántas personas o porciones\n\n` +
+                `Con eso te ayudo a crear el pedido o revisar uno existente.`;
+            } else {
+              // Mensaje por defecto / bienvenida
+              replyText =
+                `Hola ${nombreContacto} 👋\n\n` +
+                `Soy *Edu*, el asistente virtual de *Delicias Porteñas* 🧁\n\n` +
+                `Puedo ayudarte con:\n` +
+                `1️⃣ Ver la carta de productos\n` +
+                `2️⃣ Consultar precios y porciones\n` +
+                `3️⃣ Hacer o consultar un pedido existente\n\n` +
+                `Escribe el *número de la opción* que prefieras.`;
+            }
 
             const url = `https://graph.facebook.com/v21.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`;
 
